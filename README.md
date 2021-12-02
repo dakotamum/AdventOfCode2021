@@ -1,1 +1,3 @@
-# adventOfCode2021
+# AdventOfCode2021
+
+This is a pretty great repo!
