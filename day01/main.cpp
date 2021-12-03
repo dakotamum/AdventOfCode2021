@@ -16,6 +16,7 @@ void part1()
 		prevNum = nextNum;
 	}
 	std::cout << count << std::endl;
+	fin.close();
 }
 
 void part2()
@@ -41,6 +42,7 @@ void part2()
 		prevSum = nextSum;
 	}
 	std::cout << count << std::endl;
+	fin.close();
 }
 
 int main()
