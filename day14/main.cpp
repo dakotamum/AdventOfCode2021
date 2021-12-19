@@ -5,101 +5,103 @@
 #include <map>
 #include <utility>
 
-void readInput(std::string& letters, std::map<std::string, std::string>& mappy)
+void readInput(std::map<std::string, long long int>& currentMap , std::map<std::string, std::string>& rulesMap)
 {
     std::ifstream fin("input.txt");
     std::string newString;
     fin >> newString;
-    letters = newString; 
+    for(int i = 0; i < newString.size() - 1; i++)
+    {
+        std::string newPair;
+        newPair.push_back(newString[i]);
+        newPair.push_back(newString[i+1]);
+        currentMap[newPair]+=1;
+    }
     while(fin >> newString)
     {
         std::string twoLetters = newString;
         fin >> newString;
         fin >> newString;
         std::string toInsert = newString;
-        mappy[twoLetters] = toInsert;
+        rulesMap[twoLetters] = toInsert;
     }
     fin.close();
 }
 
-int mostCommonOccurrence(std::string letters)
+long long int getHighAndLowCountDifference(std::map<std::string, long long int> aMap)
 {
-    std::map<char, int> mappy;
-    for(int i = 0; i < letters.size(); i++) mappy[letters[i]]++;
-    int highCount = 0;
-    for(const auto& iter: mappy) if (iter.second > highCount) highCount = iter.second;
-    return highCount;
-}
-
-int leastCommonOccurrence(std::string letters)
-{
-    std::map<char, int> mappy;
-    for(int i = 0; i < letters.size(); i++) mappy[letters[i]]++;
-    int lowCount = 10000000;
-    for(const auto& iter: mappy) if (iter.second < lowCount) lowCount = iter.second;
-    return lowCount;
+    std::map<char, long long int> countMap;
+    for(const auto& iter : aMap)
+    {
+        countMap[iter.first[0]] += iter.second;
+        countMap[iter.first[1]] += iter.second;
+    }
+    long long int highCount = 0;
+    long long int lowCount = 100000000000000;
+    for(auto& iter : countMap)
+    {
+        if(iter.second % 2 != 0) iter.second+=1;
+        iter.second /= 2;
+        if(iter.second > highCount) highCount = iter.second;
+        if(iter.second < lowCount) lowCount = iter.second;
+    }
+    return highCount - lowCount;
 }
 
 void part1()
 {
-    std::string letters;
-    std::map<std::string, std::string> mappy;
-    readInput(letters, mappy);
-
+    std::map<std::string, long long int> currentMap;
+    std::map<std::string, std::string> rulesMap;
+    readInput(currentMap, rulesMap);
     int numSteps = 10;
 
     for(int i = 0; i < numSteps; i++)
     {
-        int insertionCount = 0;
-        std::vector<std::pair<char, int>> insertions;
-        for (int j = 0; j < letters.size() - 1; j++)
+        std::map<std::string, long long int> newMap = currentMap;
+        for(const auto& iter : currentMap)
         {
-            std::string letterPair; letterPair.push_back(letters[j]); letterPair.push_back(letters[j+1]);
-            if(mappy[letterPair] != std::string())
+            if(rulesMap[iter.first] != std::string())
             {
-                insertions.push_back({mappy[letterPair][0], j + 1 + insertionCount});
-                insertionCount++;
+                std::string firstSplit = iter.first;
+                std::string secondSplit = iter.first;
+                firstSplit[0] = rulesMap[iter.first][0];
+                secondSplit[1] = rulesMap[iter.first][0];
+                newMap[firstSplit] += iter.second;
+                newMap[secondSplit] += iter.second;
+                newMap[iter.first] -= iter.second;
             }
         }
-        for(int j = 0; j < insertions.size(); j++)
-        {
-            std::string toInsert;
-            toInsert.push_back(insertions[j].first);
-            letters.insert(insertions[j].second, toInsert);
-        }
+        currentMap = newMap;
     }
-    std::cout << mostCommonOccurrence(letters) - leastCommonOccurrence(letters) << std::endl;
+    std::cout << getHighAndLowCountDifference(currentMap) << std::endl;
 }
 
 void part2()
-{
-    std::string letters;
-    std::map<std::string, std::string> mappy;
-    readInput(letters, mappy);
-
-    int numSteps = 10;
+{   
+    std::map<std::string, long long int> currentMap;
+    std::map<std::string, std::string> rulesMap;
+    readInput(currentMap, rulesMap);
+    int numSteps = 40;
 
     for(int i = 0; i < numSteps; i++)
     {
-        int insertionCount = 0;
-        std::vector<std::pair<char, int>> insertions;
-        for (int j = 0; j < letters.size() - 1; j++)
+        std::map<std::string, long long int> newMap = currentMap;
+        for(const auto& iter : currentMap)
         {
-            std::string letterPair; letterPair.push_back(letters[j]); letterPair.push_back(letters[j+1]);
-            if(mappy[letterPair] != std::string())
+            if(rulesMap[iter.first] != std::string())
             {
-                insertions.push_back({mappy[letterPair][0], j + 1 + insertionCount});
-                insertionCount++;
+                std::string firstSplit = iter.first;
+                std::string secondSplit = iter.first;
+                firstSplit[0] = rulesMap[iter.first][0];
+                secondSplit[1] = rulesMap[iter.first][0];
+                newMap[firstSplit] += iter.second;
+                newMap[secondSplit] += iter.second;
+                newMap[iter.first] -= iter.second;
             }
         }
-        for(int j = 0; j < insertions.size(); j++)
-        {
-            std::string toInsert;
-            toInsert.push_back(insertions[j].first);
-            letters.insert(insertions[j].second, toInsert);
-        }
+        currentMap = newMap;
     }
-    std::cout << mostCommonOccurrence(letters) - leastCommonOccurrence(letters) << std::endl;
+    std::cout << getHighAndLowCountDifference(currentMap) << std::endl;
 }
 
 int main()
