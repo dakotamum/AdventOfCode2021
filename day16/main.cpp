@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
 #include <math.h>
 #include <stdio.h>
 
@@ -26,9 +27,9 @@ std::string getBinFromHex()
     return binNumber;
 }
 
-int getDecFromBin(std::string bin)
+long long int getDecFromBin(std::string bin)
 {
-    int dec = 0;
+    long long int dec = 0;
     int power = 0;
     for(int i = bin.size() - 1; i >= 0; i--)
     {
@@ -38,63 +39,194 @@ int getDecFromBin(std::string bin)
     return dec;
 }
 
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-
-void parsePacket(std::string bin)
+void parsePacket(std::string bin, int& currentIdx, int& subBitCount, int& subPacketCount, int& versionSum)
 {
-    int packetVersion = getDecFromBin(bin.substr(0, 3));
-    int packetType = getDecFromBin(bin.substr(3, 3));
-    std::cout << packetVersion << std::endl;
-    std::cout << packetType << std::endl;
+    int initialIdx = currentIdx;
+    int packetVersion = getDecFromBin(bin.substr(currentIdx, 3));
+    versionSum += packetVersion;
+    int packetType = getDecFromBin(bin.substr(currentIdx + 3, 3));
 
     if(packetType == 4)
     {
-        int currentIdx = 6;
+        currentIdx += 6;
         bool stop = false;
         std::string binRep = std::string();
         while(!stop)
         {
-            std::cout << "current index: " << currentIdx << std::endl;
             if(bin[currentIdx] == '0') stop = true;
             binRep += bin.substr(currentIdx + 1, 4);
             currentIdx += 5;
         }
-        std::cout << binRep << std::endl;
-        std::cout << getDecFromBin(binRep) << std::endl;
     }
     else
     {
-        char lengthTypeID = bin[6];
+        char lengthTypeID = bin[currentIdx + 6];
         if (lengthTypeID == '0')
         {
-            int numSubPacketBits = getDecFromBin(bin.substr(7, 15));
-            std::cout << numSubPacketBits << std::endl;
+            int numSubPacketBits = getDecFromBin(bin.substr(currentIdx + 7, 15));
+            currentIdx += 22;
+            int subBits = 0, subPkts = 0;
+            while(subBits < numSubPacketBits)
+            {
+                parsePacket(bin, currentIdx, subBits, subPkts, versionSum);
+            }
         }
-
         else if (lengthTypeID == '1')
         {
-            int numSubPackets = getDecFromBin(bin.substr(7, 11));
-            std::cout << numSubPackets << std::endl;
+            int numSubPackets = getDecFromBin(bin.substr(currentIdx + 7, 11));
+            currentIdx += 18;
+            int subBits = 0, subPkts = 0;
+            while(subPkts < numSubPackets)
+            {
+                parsePacket(bin, currentIdx, subBits, subPkts, versionSum);
+            }
         }
     }
+    subBitCount += (currentIdx - initialIdx);
+    subPacketCount ++;
 }
 
 void part1()
 {
-    parsePacket(getBinFromHex());
-    std::cout << getBinFromHex() << std::endl;
+    int currentIdx = 0, subBitCount = 0, subPacketCount = 0, versionSum = 0;
+    parsePacket(getBinFromHex(), currentIdx, subBitCount, subPacketCount, versionSum);
+    std::cout << "version sum: " << versionSum << std::endl;
+}
+
+long long int sum(std::vector<long long int> packetValues)
+{
+    long long int sum = 0;
+    for(int i = 0; i < packetValues.size(); i++) sum += packetValues[i];
+    return sum;
+}
+
+long long int product(std::vector<long long int> packetValues)
+{
+    long long int product = 1;
+    for(int i = 0; i < packetValues.size(); i++) product = packetValues[i] * product;
+    return product;
+}
+
+long long int min(std::vector<long long int> packetValues)
+{
+    long long int min = packetValues[0];
+    for(int i = 0; i < packetValues.size(); i++)
+    {
+        if(packetValues[i] < min) min = packetValues[i];
+    }
+    return min;
+}
+
+long long int max(std::vector<long long int> packetValues)
+{
+    long long int max = packetValues[0];
+    for(int i = 0; i < packetValues.size(); i++)
+    {
+        if(packetValues[i] > max) max = packetValues[i];
+    }
+    return max;
+}
+
+long long int greaterThan(std::vector<long long int> packetValues)
+{
+    if(packetValues[0] > packetValues[1]) return 1;
+    else return 0;
+}
+
+long long int lessThan(std::vector<long long int> packetValues)
+{
+    if(packetValues[0] < packetValues[1]) return 1;
+    else return 0;
+}
+
+long long int equalThan(std::vector<long long int> packetValues)
+{
+    if(packetValues[0] == packetValues[1]) return 1;
+    else return 0;
+}
+
+long long int parsePacket(std::string bin, int& currentIdx, int& subBitCount, int& subPacketCount)
+{
+    int initialIdx = currentIdx;
+    int packetVersion = getDecFromBin(bin.substr(currentIdx, 3));
+    int packetType = getDecFromBin(bin.substr(currentIdx + 3, 3));
+    long long int numToReturn = 0;
+
+    if(packetType == 4)
+    {
+        currentIdx += 6;
+        bool stop = false;
+        std::string binRep = std::string();
+        while(!stop)
+        {
+            if(bin[currentIdx] == '0') stop = true;
+            binRep += bin.substr(currentIdx + 1, 4);
+            currentIdx += 5;
+        }
+        numToReturn = getDecFromBin(binRep);
+    }
+    else
+    {
+        char lengthTypeID = bin[currentIdx + 6];
+        std::vector<long long int> subPacketValues;
+        if (lengthTypeID == '0')
+        {
+            int numSubPacketBits = getDecFromBin(bin.substr(currentIdx + 7, 15));
+            currentIdx += 22;
+            int subBits = 0, subPkts = 0;
+            while(subBits < numSubPacketBits)
+            {
+                subPacketValues.push_back(parsePacket(bin, currentIdx, subBits, subPkts));
+            }
+        }
+        else if (lengthTypeID == '1')
+        {
+            int numSubPackets = getDecFromBin(bin.substr(currentIdx + 7, 11));
+            currentIdx += 18;
+            int subBits = 0, subPkts = 0;
+            while(subPkts < numSubPackets)
+            {
+                subPacketValues.push_back(parsePacket(bin, currentIdx, subBits, subPkts));
+            }
+        }
+        switch(packetType)
+        {
+            case 0:
+                numToReturn = sum(subPacketValues);
+                break;
+            case 1:
+                numToReturn = product(subPacketValues);
+                break;
+            case 2:
+                numToReturn = min(subPacketValues);
+                break;
+            case 3:
+                numToReturn = max(subPacketValues);
+                break;
+            case 5:
+                numToReturn = greaterThan(subPacketValues);
+                break;
+            case 6:
+                numToReturn = lessThan(subPacketValues);
+                break;
+            case 7:
+                numToReturn = equalThan(subPacketValues);
+                break;
+            default:
+                break;
+        }
+    }
+    subBitCount += (currentIdx - initialIdx);
+    subPacketCount ++;
+    return numToReturn;
 }
 
 void part2()
 {
-
+    int currentIdx = 0, subBitCount = 0, subPacketCount = 0;
+    long long int totalPacketValue = 0;
+    totalPacketValue = parsePacket(getBinFromHex(), currentIdx, subBitCount, subPacketCount);
+    std::cout << "total packet value: " << totalPacketValue << std::endl;
 }
 
 int main()
