@@ -1,90 +1,117 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
 #include <sstream>
 #include <utility>
+#include <cmath>
+typedef std::pair<std::pair<int, int>, std::pair<int, int>> bounds;
 
-std::pair<std::pair<int, int>, std::pair<int, int>> readInput()
+bounds readInput()
 {
-    std::pair<std::pair<int, int>, std::pair<int, int>> bounds;
+    bounds boundage;
     std::ifstream fin("input.txt");
-
     std::string tmp;
     fin >> tmp; fin >> tmp;
     std::getline(fin, tmp, '=');
     std::getline(fin, tmp, '.');
-    bounds.first.first = std::stoi(tmp);
+    boundage.first.first = std::stoi(tmp);
     std::getline(fin, tmp, '.');
     std::getline(fin, tmp, ',');
-    bounds.first.second = std::stoi(tmp);
+    boundage.first.second = std::stoi(tmp);
     std::getline(fin, tmp, '=');
     std::getline(fin, tmp, '.');
-    bounds.second.first = std::stoi(tmp);
+    boundage.second.first = std::stoi(tmp);
     std::getline(fin, tmp, '.');
     std::getline(fin, tmp, '.');
-    bounds.second.second = std::stoi(tmp);
+    boundage.second.second = std::stoi(tmp);
     fin.close();
-    return bounds;
+    return boundage;
 }
 
-bool crossedLowerY(int ypos, int lowery)
+bool crossedBounds(int xpos, int ypos, bounds boundage)
 {
-    if (ypos < lowery)
-    {
-        std::cout << "overshot in y direction" << std::endl;
-        return true;
-    }
+    if (xpos > boundage.first.second) return true;
+    else if (ypos < boundage.second.first) return true;
     else return false;
 }
 
-bool crossedUpperX(int xpos, int upperx)
+bool madeIt(int xpos, int ypos, bounds boundage)
 {
-    if (xpos > upperx)
-    {
-        std::cout << "overshot in x direction" << std::endl;
-        return true;
-    }
+    if(xpos >= boundage.first.first && xpos <= boundage.first.second && ypos >= boundage.second.first && ypos <= boundage.second.second) return true;
     else return false;
 }
 
-bool madeIt(int xpos, int ypos, int lowery, int uppery, int lowerx, int upperx)
+bool step(int& xvel, int& yvel, int& xpos, int& ypos, bounds boundage, int& highY, bool& score)
 {
-    if(ypos >= lowery && ypos <= uppery && xpos >= lowerx && xpos <= upperx)
-    {
-        std::cout << "made it!" << std::endl;
-        return true;
-    }
-    else return false;
-}
-
-bool step(int& xvel, int& yvel, int& xpos, int& ypos, int lowery, int uppery, int lowerx, int upperx)
-{
+    if(yvel == 0) highY = ypos;
     xpos += xvel;
     ypos += yvel;
     if(xvel > 0) xvel--;
     yvel--;
-    return(crossedLowerY(ypos, lowery) || crossedUpperX(xpos, upperx) || madeIt(xpos, ypos, lowery, uppery, lowerx, upperx));
+    if(madeIt(xpos, ypos, boundage))
+    {
+        score = true;
+        return true;
+    }
+    else if(crossedBounds(xpos, ypos, boundage)) return true;
+    else return false;
+}
+
+int quad(int coord)
+{
+    double number = coord;
+    double quadNum = (std::sqrt(8*number) - 1)/2;
+    return static_cast<int>(std::ceil(quadNum));
 }
 
 void part1()
 {
     auto bounds = readInput(); 
-    int lowerx = bounds.first.first, upperx = bounds.first.second;
-    int lowery = bounds.second.first, uppery = bounds.second.second;
-    int xpos = 0, ypos = 0;
+    int highestY = 0;
 
-    int xvel = 6, yvel = 3;
-    while(!step(xvel, yvel, xpos, ypos, lowery, uppery, lowerx, upperx))
+    int yMaxVel = abs(bounds.second.first);
+    int xMinVel = quad(bounds.first.first); 
+    int xMaxVel = bounds.first.second; 
+
+    for(int i = xMinVel; i <= xMaxVel; i++)
     {
-        std::cout << "xpos: " << xpos << std::endl;
-        std::cout << "ypos: " << ypos << std::endl;
-        std::cout << "---------------" << std::endl;
+        for(int j = 0; j < yMaxVel; j++)
+        {
+            int xpos = 0, ypos = 0, xvel = i, yvel = j;
+            int highY = 0;
+            bool score = false;
+
+            while(!step(xvel, yvel, xpos, ypos, bounds, highY, score)){}
+            if(score && highY > highestY) highestY = highY;
+        }
     }
+    std::cout << "highest y position: " << highestY << std::endl;
 }
 
 void part2()
 {
+    auto bounds = readInput(); 
+    int highestY = 0;
+    int yMaxVel = abs(bounds.second.first);
+    int xMinVel = quad(bounds.first.first); 
+    int xMaxVel = bounds.first.second; 
 
+    int validCount = 0;
+
+    for(int i = xMinVel; i <= xMaxVel; i++)
+    {
+        for(int j = bounds.second.first; j < yMaxVel; j++)
+        {
+            int xpos = 0, ypos = 0, xvel = i, yvel = j;
+            int highY = 0;
+            bool score = false;
+
+            while(!step(xvel, yvel, xpos, ypos, bounds, highY, score)){}
+            if(score) validCount++;
+        }
+    }
+    std::cout << "valid number of initial velocities: " << validCount << std::endl;
 }
 
 int main()
