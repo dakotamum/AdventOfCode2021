@@ -1,3 +1,3 @@
 # AdventOfCode2021
 
-This is a pretty great repo!
+My solutions for Advent of Code 2021, enjoy!
